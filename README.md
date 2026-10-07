@@ -6,6 +6,25 @@
 
 一次划分或一种模型设置可能影响比较方向。项目进一步检查模型随机种子、数据划分和 RF 最大深度的变化。主要指标是 Macro-F1 与攻击召回率，同时报告攻击精确率、Accuracy、Weighted-F1、MCC、误报、漏报和各攻击类型的检出情况。
 
+## 文件夹说明
+
+第一次查看项目，可以先按 `experiment_steps/` 中的 01—04 顺序阅读。这里写了每一步为什么做、怎么做，以及运行后的结果和结论。其他文件夹负责保存数据、计算代码和实验结果。
+
+| 文件夹 | 放了什么 | 什么时候看 |
+| --- | --- | --- |
+| `experiment_steps/` | 四份 `.ipynb` 实验文件：01 数据探索、02 数据准备、03 特征与模型比较、04 结果分析与验证 | 想了解完整实验过程时，从这里开始 |
+| `data/raw/` | 下载的原始 CSV | 核对数据来源，或从头处理数据时查看 |
+| `data/processed/` | 02 生成的训练和测试输入，保存在 `model_inputs.npz` 中 | 03 从这里读取模型输入 |
+| `src/` | 实验中调用的计算函数，包括重复计时、重新划分和 RF 深度检查 | 想查看这些检查的完整实现时打开 |
+| `scripts/` | 启动脚本 `run_experiments.py`，负责记录环境并依次运行 03、04 | 想用一条命令运行后两步时使用；02 需要先完成 |
+| `results/` | 保存下来的图形、表格、预测、实验设置和运行环境 | 想直接查看结果，或核对某个结论的数据依据时查看 |
+
+`scripts/` 可以理解为“启动实验的入口”，`src/` 则是“实验会调用的计算代码”。把较长的函数放在 `src/`，可以让实验步骤文件更容易顺着读。04 会调用这些函数，所以运行项目时也需要保留这个文件夹。
+
+`results/` 先按实验内容分开，再按文件类型分类：图形放在 `figures/`，表格放在 `tables/`，预测和数值数组放在 `arrays/`，参数与来源记录放在 `metadata/`。具体位置见后面的“结果位置”。
+
+根目录的 `README.md` 是项目说明和运行指南，`requirements.txt` 列出 Python 依赖版本。`.git/` 和 `.gitignore` 用于版本管理，阅读实验时可以先跳过。
+
 ## 数据来源及与参考论文的差异
 
 使用 Network TON-IoT 网络流量数据的 [Hugging Face 公开镜像](https://huggingface.co/datasets/kunal0902/network-intrusion-iot/tree/main)。数据家族与采集背景见 [UNSW 数据说明](https://research.unsw.edu.au/projects/toniot-datasets)。原 CSV 有 461,043 行、45 列。SHA-256 为 `65d5465df1809b984fd10e4703bc9c012d1aefd11803773856364216f0a3520d`。去掉完全重复的原始行后，剩 449,972 行。
@@ -142,40 +161,90 @@
 
 ### 安装
 
-在 WSL Ubuntu 的项目根目录，可选择按完整 Conda 记录建立环境：
+以下命令在 **WSL Ubuntu 终端**中执行，需先安装并初始化 Conda。运行脚本会采集 Linux 和 WSL 环境信息，所以这套入口目前针对 WSL；直接在 Windows PowerShell、macOS 或普通 Linux 中执行，不属于已验证的运行方式。
+
+先进入项目根目录，即包含 `README.md`、`requirements.txt` 和 `scripts/` 的目录。本机位置如下；其他机器按实际存放位置修改：
+
+```bash
+cd ~/projects/cybersecurity_learning
+```
+
+**本机已有实验环境时**，直接激活，不必重复创建：
+
+```bash
+conda activate cybersecurity_learning
+```
+
+**首次建立复现环境时**，下面两种方式选一种。
+
+方式一：使用包含软件包版本和构建号的 Conda 记录。该文件针对 Linux x86-64：
 
 ```bash
 conda env create -n cybersecurity_learning_repeat -f results/environment/conda-environment.yml
 conda activate cybersecurity_learning_repeat
 ```
 
-也可以只安装项目直接依赖。此方式不保证底层数值库构建与本次相同：
+方式二：安装项目直接依赖。此方式不保证底层数值库构建与本次实验相同：
 
 ```bash
-conda create -n cybersecurity_learning_repeat python=3.11.16
+conda create -n cybersecurity_learning_repeat -c conda-forge python=3.11.16 pip
 conda activate cybersecurity_learning_repeat
 python -m pip install -r requirements.txt
 ```
 
-两种安装方式选一种。已有同名环境时直接激活。新环境执行 实验步骤文件 前，需要注册对应的内核：
+已有 `cybersecurity_learning_repeat` 环境时，激活后核对依赖，不要再次执行创建命令。两条安装路线都要求对应软件包仍能从配置的软件源取得。
+
+运行脚本使用名为 `python3` 的 Jupyter 内核。为了让它指向当前激活的 Python，在该环境中注册内核，并检查依赖：
 
 ```bash
 python -m ipykernel install --sys-prefix --name python3 --display-name "Python (cybersecurity_learning)"
+python -m pip check
+```
+
+内核名称与菜单显示名称作用不同；显示名称不会改变实际 Python 路径。[内核注册说明](https://ipython.readthedocs.io/en/stable/install/kernel_install.html)
+
+若机器上有多个环境，可核对当前 Python 与 `python3` 内核指向的程序是否一致：
+
+```bash
+python -c "import sys; from jupyter_client.kernelspec import KernelSpecManager; print(sys.executable); print(KernelSpecManager().get_kernel_spec('python3').argv[0])"
 ```
 
 ### 运行
 
-01—04 的实验步骤文件统一放在 `experiment_steps/`，按编号顺序阅读和运行。
+01—04 的实验步骤文件统一放在 `experiment_steps/`。**运行脚本只执行 03、04，不会自动生成 02 的输入文件。**
 
-1. 将对应 SHA-256 的原始 CSV 放入 `data/raw/Train_Test_Network.csv`。
-2. 01 用于查看数据依据。02 从原始文件独立处理，从头运行后生成 `data/processed/model_inputs.npz`。已有该文件时，02 会核对内容。
-3. 从项目根目录运行下面的命令。它依次执行 03、04，并保存 实验步骤文件 输出和结果。
+1. 从前述数据来源取得原始 CSV，放入 `data/raw/Train_Test_Network.csv`。在项目根目录核对文件：
+
+   ```bash
+   sha256sum data/raw/Train_Test_Network.csv
+   ```
+
+   预期 SHA-256 为 `65d5465df1809b984fd10e4703bc9c012d1aefd11803773856364216f0a3520d`。
+
+2. 首次处理数据时，在已激活的环境中打开实验文件：
+
+   ```bash
+   python -m jupyterlab
+   ```
+
+   01 用于阅读和核对数据探索依据。02 独立读取原始 CSV，不依赖 01 的变量。打开 `experiment_steps/02_data_preparation.ipynb`，选择上面注册的内核，重启内核并从头运行全部单元格。完成后会生成 `data/processed/model_inputs.npz`。已有文件时，02 会核对其内容；若内容不一致会停止，不会直接覆盖。
+
+3. 02 成功完成后，另开 WSL 终端，激活同一环境并进入项目根目录，再依次执行 03、04：
+
+   ```bash
+   python scripts/run_experiments.py
+   ```
+
+   若已有本项目核对过的 `model_inputs.npz`，可以直接从本步开始。04 的重新划分检查仍需读取原始 CSV，所以该文件也必须保留。
+
+需要单独运行时，使用完整命令：
 
 ```bash
-python scripts/run_experiments.py
+python scripts/run_experiments.py --step 03
+python scripts/run_experiments.py --step 04
 ```
 
-单独运行一份：`python scripts/run_experiments.py --step 03` 或 `--step 04`。04 依赖当前 03 的完整结果。重跑会更新对应结果文件；需要保留不同机器的计时记录时，应先保存整个结果目录。
+04 依赖当前 03 的完整结果。脚本会更新相应实验步骤文件中的输出、结果文件和环境记录。需要保留上一轮的输出与计时时，应先备份 `experiment_steps/` 和 `results/`。随机设置可以固定，运行时间仍会随机器和系统负载变化。
 
 ## 结果位置
 
