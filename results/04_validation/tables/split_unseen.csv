@@ -1,0 +1,10 @@
+﻿划分种子,原始列名,仅测试侧取值,测试行数
+42,http_trans_depth,3,1
+42,http_trans_depth,4,1
+42,http_trans_depth,5,1
+52,http_trans_depth,4,1
+62,http_trans_depth,4,1
+72,http_trans_depth,10,1
+72,http_trans_depth,6,1
+82,http_trans_depth,4,1
+82,http_trans_depth,8,1

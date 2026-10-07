@@ -1,0 +1,65 @@
+{
+  "split_seeds": [
+    42,
+    52,
+    62,
+    72,
+    82
+  ],
+  "model_seed": 42,
+  "thresholds": [
+    0.01,
+    0.015,
+    0.02,
+    0.03,
+    0.1
+  ],
+  "source_input_sha256": "9427db4e6191958ef92a3c0e93a24a28ee85b7ab265fefbe0359f0eb4745e029",
+  "raw_sha256": "65d5465df1809b984fd10e4703bc9c012d1aefd11803773856364216f0a3520d",
+  "selection": "minimum distribution deviation, never model scores",
+  "threads": 4,
+  "files": {
+    "arrays/split_82_artifacts.npz": "03f90420d90eaabf6c2fc6f550e9f766544be88a3757605be83f9d416e59e5e9",
+    "arrays/split_72_artifacts.npz": "7bb5e1d582718a625e13729a2db2371ae03262391476d8e2dca17d82d9adf061",
+    "tables/split_candidates.csv": "729ce7575c81e63a9678e1afe0ec2bfa35fbe4b0f51ad670be2558d5dc7b78c3",
+    "tables/timing_pairs.csv": "7f1fa0ca2656f82f8dfb2e9aea92f8b396a2bcd2f5d8f37eac175d68f0281204",
+    "tables/timing_summary.csv": "4b73baaafc978cbfab30e5dac86d2f501ecd0dbb135123594400950022651d84",
+    "tables/split_unseen.csv": "c193e493c530057aee426f28656a496f2faeb953eb83e72fbe8dfb65d285042d",
+    "metadata/split_62_categories.json": "1c6af7880fe8ef5fb5d97a318479341750839f4b7de8f5d068efa09df8b444be",
+    "tables/split_audit.csv": "5aa45e87f2c778ad0e969cef7c3652dacc25e7e5fa16789c787c1d9c1ba17011",
+    "metadata/split_42_categories.json": "c365c23dad4ef1827aca85ad7d190c7d0002f157c9ea1a96ea8d8c7b1ec4a11f",
+    "tables/split_test_overlap.csv": "791cb1bac6287e0c9e0ba8a6324336c8744e3c0f291a717b61daea4ddb92aaa6",
+    "tables/split_summary.csv": "cfba8bf88bbc5ed158c08d826a03ccd3102b22b772128fead1924fe624064058",
+    "tables/split_results.csv": "1127bc0280b7b261041f7b4ca113ed6161733906c5fbbcf558da82fcbd206c14",
+    "arrays/split_52_artifacts.npz": "f081784f9a1c45d224515ee52d9ed12e89db6ffeb332354d8bf3c10caaecca71",
+    "tables/split_pairs.csv": "49edf288a3946f403305b14ad4dab2d2380e2359fbfd53206185d6ab912df968",
+    "metadata/split_52_categories.json": "1c6af7880fe8ef5fb5d97a318479341750839f4b7de8f5d068efa09df8b444be",
+    "tables/split_features.csv": "fc37402fb3056bee613096adfb88aa457ba67c90d9324074a88edd779026b072",
+    "tables/split_types.csv": "24f18bf9e743c7ee4c1a335792291b9c4044b507614bdab956d099bdf327683c",
+    "metadata/split_82_categories.json": "b1df4aaef22ed2d3f85e7db2fa5f1726bdacaa247c19ed8d587a1059fa223c96",
+    "tables/split_constants.csv": "3508e3e2872bfa0ec29b7c22d184f3fb3e627ab6380c67da4a21561017413724",
+    "arrays/split_62_artifacts.npz": "8796e711e0b4a2520118a97cdbccc767cdebca2e846fe912a114cfd3ed2e67b3",
+    "metadata/split_72_categories.json": "0b1f8eb20be43d4ac8b4d08f431166a3874c2d69caa11311a6a614adee5e6811",
+    "arrays/timing_predictions.npz": "9dd153b5299a9309ca2e8f16615876a4165ddbe28c15f1fef1605da7c3f05ea3",
+    "tables/split_pair_summary.csv": "dbdd8b6d7bada549d9c92442b63b99031e02a9d20a5e16ce496934e605afae32",
+    "arrays/split_42_artifacts.npz": "8d4cef557d1b405816961f1eea13c058bb1eb1c57be9c65eacefa870d44f5e92",
+    "tables/timing_results.csv": "d2c705c24eb7ed900a23813d92d4135d3a2a95bc2bdc499f81982735848dbe8f"
+  },
+  "source_sha256": {
+    "src/experiment_validation.py": "f1ea47c842a4b210b0d14858f79629b691d625e1afcc45d4bb689a8eebaf3a53",
+    "scripts/run_experiments.py": "a1214f3397dfd596fba63c9c22c883d09a8df1cf40a28e480e7880dfa481a323",
+    "results/03_features_and_models/metadata/experiment_settings.json": "4b5dc3f0de0949902a8af0b94f18096e44ea336ab30b18a8bba008e5c1a63634",
+    "results/environment/environment.json": "973fe27cccad2e09beeb9846cdec3521988a552393fcb42f81000ee99bed3a22"
+  },
+  "layout_update": {
+    "date": "2026-10-08",
+    "results_recomputed": false,
+    "code_sha256": {
+      "src/experiment_validation.py": "bdb9522cc414d1554b1eb0821ee9e6118ae760c93bde806c351a3986f486385f",
+      "src/rf_depth_validation.py": "3c53bb6c3a711ea1867117b083f456cd41f81290d49133652c29f599da22dd41",
+      "scripts/run_experiments.py": "196a83fa7cc34ccb67561014e5c9285b6072d1d139a893e1883b823c0ebb7bfd"
+    },
+    "hash_scope": "Original execution code hashes are retained; layout code hashes describe path changes only.",
+    "experiment_directory": "experiment_steps"
+  }
+}

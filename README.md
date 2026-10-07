@@ -1,85 +1,213 @@
-# 基于 Network TON-IoT 的入侵检测特征对比
+# 基于 Network TON-IoT 的入侵检测特征比较
 
-这个项目使用 Network TON-IoT 的网络流量数据，比较原始特征、特征选择和 PCA 三种输入方式对入侵检测的影响。我想把问题做小、做完整，而不是一开始就堆很多模型
+## 研究问题
 
-这个问题受到李靖老师关于物联网入侵检测和特征降维的研究启发，但本项目不是论文复现。目前还没有实验结果，也不预设哪种方法会赢
+减少输入列可能降低计算开销，也可能丢失判断攻击所需的信息。PCA 还会改变输入的表示方式。所以本项目比较 Original、Pearson 特征选择（FS）与 PCA，回答：**在相同数据划分和模型设置下，输入数量与表示方式怎样影响检测表现和计算开销？**
 
-# 回答的问题
+一次划分或一种模型设置可能影响比较方向。项目进一步检查模型随机种子、数据划分和 RF 最大深度的变化。主要指标是 Macro-F1 与攻击召回率，同时报告攻击精确率、Accuracy、Weighted-F1、MCC、误报、漏报和各攻击类型的检出情况。
 
-在使用同一份数据、同一组训练和测试划分、同样的预处理和分类器时，特征选择与 PCA 对准确率、攻击识别能力、训练效率和可解释性分别产生什么影响。更具体地说，我会比较保留少量有明确含义的原始网络特征，与把特征压缩成主成分后的效果和代价
+## 数据来源及与参考论文的差异
 
-# 假设
+使用 Network TON-IoT 网络流量数据的 [Hugging Face 公开镜像](https://huggingface.co/datasets/kunal0902/network-intrusion-iot/tree/main)。数据家族与采集背景见 [UNSW 数据说明](https://research.unsw.edu.au/projects/toniot-datasets)。原 CSV 有 461,043 行、45 列。SHA-256 为 `65d5465df1809b984fd10e4703bc9c012d1aefd11803773856364216f0a3520d`。去掉完全重复的原始行后，剩 449,972 行。
 
-我目前猜测 特征选择可能保留更清楚的网络安全语义，也可能减少训练和推理时间。PCA 可能得到更紧凑的输入，并在某些模型中保持或改善检测表现，但主成分通常不如原始网络字段直观。这只是开始实验前的假设，结果可能支持它，也可能推翻它
+本项目借鉴参考论文 [Optimizing IoT intrusion detection system: feature selection versus feature extraction in machine learning](https://link.springer.com/article/10.1186/s40537-024-00892-y) 中的比较思路。
 
-# 实验大致流程
+| 比较项 | 参考论文 | 本项目 |
+| --- | --- | --- |
+| 数据版本 | 使用 Network TON-IoT 网络数据 | 使用公开镜像；|
+| 分类任务 | 二分类及多分类 | 正常/攻击二分类；按真实攻击类型统计漏报 |
+| 检测模型 | DT、RF、kNN、Gaussian NB、MLP | DT 与 RF |
+| 编码后输入 | 报告 77 维 | 原隔离划分 88 维；五份隔离划分实际为 88、89、90 维 |
+| 划分说明 | 80:20；未说明按处理后的相同输入组合隔离 | 按处理后的 38 列分组，选择接近 80:20 的组隔离划分 |
+| 重复方式 | 报告每种维数方案五次运行的平均值 | 分开检查模型种子、重复计时和划分种子；另做 RF 深度检查 |
 
-下载TON-IoT 的网络流量数据之后，先做正常流量与攻击流量的二分类。数据清洗后，在相同的训练集和测试集上比较三组输入：全部可用特征（Original）、按 Pearson 特征相关矩阵和平均相关分数选择出的原始特征（Feature Selection），以及 PCA 得到的主成分。分类器先用决策树（Decision Tree），再用随机森林（Random Forest）检查结论是否稳定
+## 输入组合隔离的原因和方法
 
-主要看 Macro-F1 和攻击类召回率，同时记录准确率、精确率、Weighted-F1、MCC、混淆矩阵、训练时间、推理时间及保留的特征数量。不能只凭准确率判断，因为正常流量与攻击流量的数量可能不均衡。编码、Min-Max 缩放、特征选择和 PCA 都只能在训练集上拟合，测试集只用于评估。默认随机种子为 `42`
+完全重复的原始行去掉后，删除时间、IP、端口以及文本二值化，仍可能让不同记录形成相同输入。02 的普通分层划分检查发现，89,995 条测试记录中，54,061 条与训练记录共享完整输入组合。仅做原始整行去重，不能避免这种重叠。
 
-# 重要环节
+为了检查模型面对未见输入组合时的表现，正式实验使用以下划分：
 
-- 数据：Network TON-IoT 的去重后全量数据
-- 任务：正常流量与攻击流量二分类
-- 表示方法：Original、Feature Selection、PCA
-- 模型：Decision Tree 和 Random Forest
-- 主指标：Macro-F1、攻击类 Recall
-- 辅助指标：Accuracy、Precision、Weighted-F1、MCC、混淆矩阵、训练时间和推理时间
-- 实验约束：相同训练/测试划分，预处理只在训练集上拟合，默认随机种子为 42。
+1. 排除时间、源/目标 IP、源/目标端口，以及 `label`、`type`。目标列不进入模型。
+2. 按列含义处理 `-` 与文本出现信息。38 列取值全部相同的记录归为同一组，保留组内全部记录。
+3. 用 `StratifiedGroupKFold` 将完整的组分入五折，尽量保持各类型比例。同一组不能跨折。
+4. 轮流以一折为测试集，其余四折为训练集。根据测试行数占比、攻击比例和各 `type` 分布的偏差选择一份方案，不使用模型成绩选择。
+5. 类别取值与 Min-Max 范围只根据该份训练集确定。测试集沿用相同处理。
 
-# 这次先不做什么
+原划分种子为 42，训练集 360,464 行，测试集 89,508 行，最终输入为 88 列。`data/processed/model_inputs.npz` 只包含这份隔离划分。新增划分单独保存，不替换它。
 
-- BoT-IoT 或其他第二数据集
-- CNN、Autoencoder 或深度迁移学习
-- 遗传算法调参和集成学习系统
-- 大规模超参数搜索
-- 对相关论文结果的严格复现声明
+五份划分内部的共享完整输入组合数均为 0。但不同轮次的测试记录仍有交集；相近流量也可能存在关联。组隔离不能直接证明跨时间或跨设备的泛化能力。
 
-# 产出
+## 输入方案与检测模型
 
-1. 降维后，攻击检测能力有没有明显变化
-2. 特征选择与 PCA，哪一种在检测效果和耗时之间更平衡
-3. 被选中的原始特征能否用网络安全知识解释
-4. PCA 的效果变化是否值得牺牲一部分可解释性
-5. 类别不平衡和只使用一个数据集，对结论有哪些限制
+单棵 DT 可以查看逐层分支的判断路径。RF 汇总多棵树，可以检查相同输入表示在树集成中的表现。所以选用 DT 与 RF，比较两种树结构下的取舍。[DT 说明](https://scikit-learn.org/stable/modules/tree.html)和 [RF 说明](https://scikit-learn.org/stable/modules/ensemble.html#forest)提供了方法依据。两者都属于树模型，结论不能直接推广到所有分类器。
 
-# 目前进度
+- **Original：** 保留原隔离划分的全部 88 列。
+- **FS：** 按训练集 Pearson 平均有符号相关分数筛选，范围为正负阈值。阈值 0.01、0.015、0.02、0.03 对应 10、33、45、69 列。0.1 保留全部列，与 Original 相同。
+- **PCA：** 10、33、45、69 维与 FS 配对。另设 PCA 88 维与 Original 比较，用于检查维数不变时改变表示的影响。
+- **原模型配置：** DT 使用 Gini，不限制最大深度；RF 使用 100 棵树、最大深度 5、`max_features="sqrt"`、`n_jobs=4`。
 
-项目目录、Python 环境和一份来自公开镜像的 Network TON-IoT 网络流量 CSV 已经准备好。项目 `data/raw/` 与桌面副本的 SHA-256 相同，均为未去重的 461,043 行、45 列数据。`01_data_exploration.ipynb` 已完成数据探索，`02_data_preparation.ipynb` 已在去重后全量数据上完成字段处理、80 比 20 分层划分、训练集拟合的编码与 Min-Max 缩放。当前编码结果为 91 维，训练与测试输入有明显的相同组合。特征选择、PCA、模型训练和结果比较尚未运行，因此没有实验结论。旧的 100,000 行预跑设想不作为本项目正式实验。方法差异和后续改进记录在根目录的论文方法对照文件中
+每种模型有十种输入方案，03 共运行 20 个实验。FS 与 PCA 均只根据训练集确定。相关分数不等于预测贡献，解释方差也不等于检测准确率。
 
-# 环境与安装
+## 原配置下的三项主要发现
 
-我在 Windows 11 的 WSL2 Ubuntu 24.04 中开发，项目放在 Linux 文件系统里。使用 Miniconda 管理独立环境，Python 版本为 3.11.16。当前环境中已核验的直接依赖记录在 `requirements.txt`，包括 NumPy、pandas、scikit-learn、Matplotlib、seaborn、JupyterLab 和 ipykernel。Git 版本为 2.43.0。Python、Git、Ubuntu 和 Miniconda 不属于 pip 依赖，因此不写进 `requirements.txt`
+以下发现对应 DT 原配置与 RF 最大深度 5。划分检查固定模型种子 42；计时检查固定原隔离划分与模型种子。完整指标保留在对应结果表中。
 
-在已安装 Miniconda 的 WSL Ubuntu 中，可以从项目根目录安装已记录的 Python 版本和直接依赖：
+### 1. 较小阈值下，当前 PCA 的 Macro-F1 高于配对 FS
+
+五份隔离划分中，阈值 0.01、0.015、0.02 的两种模型共形成 30 组配对，PCA 的 Macro-F1 均更高。每组比较使用相同模型、相同划分和相同维数。这里总结 Macro-F1，是因为它是预先确定的主要指标。
+
+攻击召回率不一定同向。例如 RF 在阈值 0.02 下，有四份划分为 PCA 的攻击召回率更低。所以不能把 Macro-F1 更高直接写成攻击漏报更少。这些结果只对应当前 Pearson 选列规则。[完整配对结果](results/04_validation/tables/split_pairs.csv)
+
+### 2. 阈值 0.03 下，FS/PCA 的排序随划分改变
+
+该阈值下，两种模型在划分种子 42、62 时均为 PCA 的 Macro-F1 更高；在 52、72、82 时均为 FS 更高。五份划分的实际配对维数依次为 69、74、72、71、73。
+
+同一次划分内维数相同。跨划分比较的是固定阈值规则，入选列可能变化，所以不能把排序反转单独归因于测试记录变化。它反映了重新划分并重新准备输入后，整个方法流程的敏感性。[划分与维数记录](results/04_validation/tables/split_audit.csv)、[入选列记录](results/04_validation/tables/split_features.csv)
+
+### 3. PCA 减少输入后，准备与训练总时间仍可能更长
+
+固定条件重复五次后，八个降维 PCA 实验的平均训练总时间均高于同模型 Original。两个完整维数 PCA 实验也更长。训练总时间包含表示准备和模型训练，不能仅按模型训练部分判断总体开销。
+
+这些是本机批量计算的结果。测试转换与预测时间另行报告，不能由训练时间推断。五次重复的全部时间组成、均值、标准差和范围见[计时汇总](results/04_validation/tables/timing_summary.csv)。
+
+## 验证设计
+
+不同变化对应不同问题，所以四项验证分别记录，不混合求一个总平均。
+
+| 验证 | 保持不变 | 改变或重复的内容 | 范围 |
+| --- | --- | --- | --- |
+| 模型随机性 | 原隔离划分、表示、其他参数 | 模型种子 42、52、62、72、82 | 20 个实验各五次，共 100 次 |
+| 同条件计时 | 原隔离划分、模型种子 42、线程配置 | 重新生成表示、训练与预测 | 20 个实验各五次，共 100 次 |
+| 划分敏感性 | 输入规则、阈值、模型种子 42 | 划分种子 42、52、62、72、82 | 每份重新准备输入，共 100 次训练 |
+| RF 深度敏感性 | 原隔离划分、模型种子 42、其余 RF 参数 | 最大深度 5、10、None | 十种输入各三档，共 30 次训练 |
+
+每份新划分都根据自身训练集重新确定类别、Min-Max 范围、FS 与 PCA。训练恒定列无法计算通常的 Pearson 系数，所以不进入 FS 评分，Original 与 PCA 仍保留。五份实际划分均未发现训练恒定列。
+
+
+### RF 深度检查结果
+
+下表展示全部十种输入的测试 Macro-F1，固定使用原隔离划分和模型种子 42。深度 5 的十组预测均与 03 一致。完整检测指标、训练与测试差距、树规模及攻击类型结果另行保留。
+
+| 输入方案 | 维数 | 深度 5 | 深度 10 | 不设上限 |
+| --- | ---: | ---: | ---: | ---: |
+| Original | 88 | 0.837757 | 0.876962 | 0.917162 |
+| FS | 10 | 0.721745 | 0.757752 | 0.757752 |
+| PCA | 10 | 0.790920 | 0.793491 | 0.793548 |
+| FS | 33 | 0.732269 | 0.766351 | 0.773793 |
+| PCA | 33 | 0.804149 | 0.806113 | 0.806740 |
+| FS | 45 | 0.785665 | 0.791720 | 0.792393 |
+| PCA | 45 | 0.804299 | 0.868495 | 0.869292 |
+| FS | 69 | 0.790949 | 0.849670 | 0.900029 |
+| PCA | 69 | 0.820403 | 0.897633 | 0.916253 |
+| PCA | 88 | 0.821600 | 0.886787 | 0.906732 |
+
+四组降维 PCA 在三档深度下均高于配对 FS，共 12 组。完整维数 PCA 则在深度 10 时高于 Original，在深度 5 和不设上限时低于 Original。所以深度设置会影响部分排序。十种输入在后两档深度下的 Macro-F1 均高于深度 5，但这不构成最终参数选择的依据。
+
+攻击召回率也会改变比较方向：深度 5 时，45、69 维 PCA 低于配对 FS；后两档深度下均高于 FS。这说明 Macro-F1 优势不能替代漏报检查。[全部配对差值](results/04_rf_depth/tables/pairs.csv)、[全部训练诊断](results/04_rf_depth/tables/diagnostics.csv)、[全部攻击类型结果](results/04_rf_depth/tables/attack_types.csv)
+
+### 计时范围
+计时的 BLAS/OpenMP 线程池限制为四线程，RF 使用四个并行任务。输入准备、模型训练、测试转换和预测分别计时。文件读写、02 预处理、指标计算与绘图不计入。同条件重复计时按固定随机顺序遍历全部方案，模型顺序交替。各候选按独立使用方案计入准备开销，所以总时间不能相加当作脚本实际耗时。RF 深度检查的时间只有单次记录，不与五次计时合并。
+
+## 复现环境与 requirements
+
+下表记录本次运行环境，不是最低硬件要求。CPU、物理内存、系统和虚拟化版本不属于 pip 软件包，所以在这里说明；Python 直接依赖放在 `requirements.txt`。
+
+| 项目 | 本次环境 |
+| --- | --- |
+| CPU | AMD Ryzen 9 8945HX with Radeon Graphics，16 个物理核心、32 个逻辑处理器 |
+| 主机可见物理内存 | 34,142,187,520 字节，约 31.80 GiB |
+| Windows | Windows 11 家庭中文版，10.0.26200.9457 |
+| 虚拟化环境 | WSL2，WSL 2.6.3.0；主机检测到 Hypervisor |
+| Linux 发行版 | Ubuntu 24.04.3 LTS |
+| Linux 内核 | 6.6.87.2-microsoft-standard-WSL2 |
+| WSL 可见处理器 | 32 个逻辑处理器 |
+| WSL 可见内存 / 交换空间 | 16,655,716,352 字节（约 15.51 GiB）/ 4 GiB |
+| WSLg | 1.0.71；本实验数值计算不依赖图形加速 |
+| Python | 3.11.16 |
+| Conda | 25.11.0，Miniconda 管理环境 |
+| Git | 2.43.0 |
+| NumPy / pandas | 2.4.6 / 3.0.6 |
+| scikit-learn / SciPy | 1.9.1 / 1.17.1 |
+| Matplotlib / seaborn | 3.11.2 / 0.13.2 |
+| JupyterLab / ipykernel | 4.6.4 / 7.3.0 |
+| joblib / threadpoolctl | 1.6.0 / 3.7.0 |
+| nbclient / nbformat | 0.11.0 / 5.11.1 |
+| BLAS | OpenBLAS 0.3.34，pthreads |
+| GNU OpenMP / C++ 运行库 | libgomp 16.2.0 / libstdcxx 16.2.0 |
+| 并行设置 | RF `n_jobs=4`；BLAS/OpenMP 使用 `threadpool_limits(limits=4)` |
+
+这些设置分别约束计算库线程池和 RF 并行任务，不表示整个进程或整台电脑最多只有四个线程。操作系统、Jupyter 及其他程序也会运行。计时结果限定于本机的这组配置。
+
+完整软件包版本、Conda 构建号、线程库和系统信息保存在 `results/environment/`。`conda-environment.yml` 可用于同平台重建环境。`package-versions.txt` 是全部 Python 软件包版本记录。原始 `pip-freeze.txt` 包含 Conda 构建路径，仅用于审计，不作为安装命令输入。GNU OpenMP 等底层库的版本见 `conda-packages.json`；运行时接口未返回版本的项目不推测填写。
+
+### 安装
+
+在 WSL Ubuntu 的项目根目录，可选择按完整 Conda 记录建立环境：
 
 ```bash
-cd ~/projects/cybersecurity_learning
-conda create -n cybersecurity_learning python=3.11.16
-conda activate cybersecurity_learning
+conda env create -n cybersecurity_learning_repeat -f results/environment/conda-environment.yml
+conda activate cybersecurity_learning_repeat
+```
+
+也可以只安装项目直接依赖。此方式不保证底层数值库构建与本次相同：
+
+```bash
+conda create -n cybersecurity_learning_repeat python=3.11.16
+conda activate cybersecurity_learning_repeat
 python -m pip install -r requirements.txt
 ```
 
-如果已有同名环境，不要重复创建，先用 `conda env list` 检查。安装完成后可用 `python --version` 和 `python -m pip list` 核对版本。JupyterLab 已包含在依赖中，需要打开笔记本时运行 `jupyter lab`
+两种安装方式选一种。已有同名环境时直接激活。新环境执行 实验步骤文件 前，需要注册对应的内核：
 
-
-# 目录
-
-```text
-cybersecurity_learning/
-├── README.md                 # 项目问题、实验思路和运行环境
-├── requirements.txt          # Python 依赖及版本
-├── .gitignore                # 不提交的数据和临时文件规则
-├── data/
-│   ├── raw/                  # 保留下载的数据，不在这里做清洗
-│   │   └── Train_Test_Network.csv
-│   └── processed/            # 后续保存清洗或抽样后的数据
-├── notebooks/                # 数据探索和实验笔记本
-├── notes/                    # 从零开始的过程与实验决策记录
-│   └── process.md
-├── results/                  # 后续保存指标和对比结果
-│   └── figures/              # 后续保存混淆矩阵等图表
-├── scripts/                  # 后续放可重复运行的实验入口
-└── src/                      # 后续放可复用的数据处理和评估代码
+```bash
+python -m ipykernel install --sys-prefix --name python3 --display-name "Python (cybersecurity_learning)"
 ```
+
+### 运行
+
+01—04 的实验步骤文件统一放在 `experiment_steps/`，按编号顺序阅读和运行。
+
+1. 将对应 SHA-256 的原始 CSV 放入 `data/raw/Train_Test_Network.csv`。
+2. 01 用于查看数据依据。02 从原始文件独立处理，从头运行后生成 `data/processed/model_inputs.npz`。已有该文件时，02 会核对内容。
+3. 从项目根目录运行下面的命令。它依次执行 03、04，并保存 实验步骤文件 输出和结果。
+
+```bash
+python scripts/run_experiments.py
+```
+
+单独运行一份：`python scripts/run_experiments.py --step 03` 或 `--step 04`。04 依赖当前 03 的完整结果。重跑会更新对应结果文件；需要保留不同机器的计时记录时，应先保存整个结果目录。
+
+## 结果位置
+
+| 路径 | 内容 |
+| --- | --- |
+| `data/processed/model_inputs.npz` | 原种子 42 的隔离划分输入 |
+| `results/03_features_and_models/` | 20 个实验、完整维数 PCA 对照、预测与图形 |
+| `results/04_results_and_conclusions/` | 指标核对、错误分析及五个模型种子的结果 |
+| `results/04_validation/` | 五次计时、五份划分及各自的参数、索引、预测与比较 |
+| `results/04_rf_depth/` | 三档 RF 深度的全部指标、树规模、配对结果、预测与参数 |
+| `results/environment/` | CPU、内存、系统、虚拟化与软件版本 |
+| `src/experiment_validation.py` | 重复计时与重新隔离划分的计算函数 |
+| `src/rf_depth_validation.py` | RF 深度检查的计算函数 |
+| `scripts/run_experiments.py` | 顺序执行 03、04 的入口 |
+
+### 结果目录分类
+
+03 与各个 04 结果目录使用相同分类：`figures/` 保存图形，`tables/` 保存 CSV 表格，`arrays/` 保存预测、索引及数值数组，`metadata/` 保存实验参数、类别清单和来源记录。没有图形的验证目录不单独建立 `figures/`。
+
+`04_results_and_conclusions/` 保存原结果分析与模型种子检查，`04_validation/` 保存重复计时和重新划分，`04_rf_depth/` 保存 RF 深度检查。运行环境记录继续放在 `results/environment/`。
+
+## 当前限制
+
+- **数据范围：** 只有一个公开镜像文件，未验证独立时间段、设备或采集环境。统计相符不证明它与参考论文所用的数据文件完全相同。
+- **记录关系：** 组隔离保留了组内重复记录及标签冲突，也不排除相近流量之间的关联。不同轮次的测试集有重叠。
+- **方法范围：** 两种检测模型都是树模型。FS 使用固定的平均有符号 Pearson 分数，正负相关可能相互抵消。文本二值化等输入选择尚未逐项做消融验证。
+- **参数与随机性：** RF 深度只在原划分、模型种子 42 下检查。尚未完成深度、划分和模型种子的全部组合，也没有通过训练内部验证选取最佳参数。
+- **统计和时间：** 均值与标准差描述指定重复的波动，不构成独立样本的显著性证明。批量耗时不等于在线响应时间。
+- **结果使用：** 当前测试集已经用于方法比较，不能继续根据它反复选择参数后，仍称为未使用的最终测试集。
+
+## 下一项研究问题
+
+现有验证都来自同一数据文件，还不能判断观察到的取舍是否适用于新的采集条件。下一项问题是：**当测试数据来自不同时间段或设备时，较小阈值下的 PCA 优势，以及阈值 0.03 下的排序变化是否仍然出现？**
+
+所以下一步先核对能否取得带采集时间或设备来源的独立数据，并确认其输入定义、标签和来源。数据可用后再固定外部验证方案。若需要选择模型参数，应先在训练数据内部进行分组验证，外部测试不参与选择。

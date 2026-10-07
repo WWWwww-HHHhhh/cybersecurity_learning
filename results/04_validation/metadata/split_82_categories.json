@@ -1,0 +1,95 @@
+{
+  "proto": [
+    "icmp",
+    "tcp",
+    "udp"
+  ],
+  "service": [
+    "dce_rpc",
+    "dhcp",
+    "dns",
+    "ftp",
+    "gssapi",
+    "http",
+    "n/a",
+    "smb",
+    "smb;gssapi",
+    "ssl"
+  ],
+  "conn_state": [
+    "OTH",
+    "REJ",
+    "RSTO",
+    "RSTOS0",
+    "RSTR",
+    "RSTRH",
+    "S0",
+    "S1",
+    "S2",
+    "S3",
+    "SF",
+    "SH",
+    "SHR"
+  ],
+  "dns_AA": [
+    "F",
+    "T",
+    "n/a"
+  ],
+  "dns_RD": [
+    "F",
+    "T",
+    "n/a"
+  ],
+  "dns_RA": [
+    "F",
+    "T",
+    "n/a"
+  ],
+  "dns_rejected": [
+    "F",
+    "T",
+    "n/a"
+  ],
+  "ssl_resumed": [
+    "F",
+    "T",
+    "n/a"
+  ],
+  "ssl_established": [
+    "F",
+    "T",
+    "n/a"
+  ],
+  "http_trans_depth": [
+    "1",
+    "10",
+    "2",
+    "3",
+    "5",
+    "6",
+    "7",
+    "9",
+    "n/a"
+  ],
+  "http_method": [
+    "GET",
+    "HEAD",
+    "POST",
+    "n/a"
+  ],
+  "http_version": [
+    "1.1",
+    "n/a"
+  ],
+  "weird_addl": [
+    "43",
+    "46",
+    "48",
+    "n/a"
+  ],
+  "weird_notice": [
+    "F",
+    "n/a"
+  ]
+}

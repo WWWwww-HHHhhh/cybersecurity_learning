@@ -1,0 +1,207 @@
+{
+  "source_directory": "results/03_features_and_models",
+  "source_sha256": {
+    "tables/results_summary.csv": "0394f280cb31d19e88ae7e64564bb1c9845e554a698ed52c2b662b04c7a62f3d",
+    "arrays/test_predictions.npz": "1c1d1faf9fcbfb680f47718d88fedca7294c6cbb382728b11fca6cf8b6dc75a4",
+    "metadata/experiment_settings.json": "4b5dc3f0de0949902a8af0b94f18096e44ea336ab30b18a8bba008e5c1a63634",
+    "tables/attack_type_recall.csv": "8a64cda585e8c25f7967e00b8d33e05106585d67a2a2be477cd120fd94e78d9b",
+    "tables/fs_selected_features.csv": "3d113c7ca3010c271a4dd7b145405ba20f1f2522b69c43c6e550dc62e4d85502",
+    "tables/fs_thresholds.csv": "9ab6e0c682b09aaf27317acd058f845c38cbcf508c9556c7fb89a88c7ab18112",
+    "tables/feature_scores.csv": "b44b33f1ca984db88e15b2e158f04a67b8a8ad3b7419df60c4be10c0fb9f4e4d",
+    "tables/pca_variance.csv": "7f96dcaf585c612457416b34a6a36a556cb03f8bfe1c81c1e3ce0277110aa499",
+    "tables/pca_loadings.csv": "971c788fac637c72cf82020860c5a790e23c46626253eccab6949ac5d55ff79c",
+    "tables/fs_pca_comparison.csv": "7ac66bcaf416525c6e337bff263143f35d06733dd3740b96ea314cc11bb2e6b1"
+  },
+  "input_sha256": "9427db4e6191958ef92a3c0e93a24a28ee85b7ab265fefbe0359f0eb4745e029",
+  "split": "exact_input_group_holdout",
+  "random_seed": 42,
+  "result_rows": 20,
+  "test_rows": 89508,
+  "model_retrained": true,
+  "validation": {
+    "kind": "model_seed_sensitivity_fixed_split",
+    "seeds": [
+      42,
+      52,
+      62,
+      72,
+      82
+    ],
+    "run_count": 100,
+    "model_parameters": {
+      "DT": {
+        "ccp_alpha": 0.0,
+        "class_weight": null,
+        "criterion": "gini",
+        "max_depth": null,
+        "max_features": null,
+        "max_leaf_nodes": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "random_state": 42,
+        "splitter": "best"
+      },
+      "RF": {
+        "bootstrap": true,
+        "ccp_alpha": 0.0,
+        "class_weight": null,
+        "criterion": "gini",
+        "max_depth": 5,
+        "max_features": "sqrt",
+        "max_leaf_nodes": null,
+        "max_samples": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "n_estimators": 100,
+        "n_jobs": 4,
+        "oob_score": false,
+        "random_state": 42,
+        "verbose": 0,
+        "warm_start": false
+      }
+    },
+    "pca": {
+      "input": "Min-Max from 02",
+      "solver": "full",
+      "whiten": false
+    },
+    "timing_repeated": true,
+    "timing_repeat_count": 5,
+    "split_seeds": [
+      42,
+      52,
+      62,
+      72,
+      82
+    ],
+    "split_model_seed": 42,
+    "resplit_results": "results/04_validation",
+    "model_seed_check_split_changed": false,
+    "split_validation_changed": true
+  },
+  "rf_depth_validation": {
+    "kind": "rf_depth_sensitivity_fixed_split_and_seed",
+    "depths": [
+      5,
+      10,
+      null
+    ],
+    "split_seed": 42,
+    "model_seed": 42,
+    "run_count": 30,
+    "model_parameters": {
+      "5": {
+        "bootstrap": true,
+        "ccp_alpha": 0.0,
+        "class_weight": null,
+        "criterion": "gini",
+        "max_depth": 5,
+        "max_features": "sqrt",
+        "max_leaf_nodes": null,
+        "max_samples": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "n_estimators": 100,
+        "n_jobs": 4,
+        "oob_score": false,
+        "random_state": 42,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "10": {
+        "bootstrap": true,
+        "ccp_alpha": 0.0,
+        "class_weight": null,
+        "criterion": "gini",
+        "max_depth": 10,
+        "max_features": "sqrt",
+        "max_leaf_nodes": null,
+        "max_samples": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "n_estimators": 100,
+        "n_jobs": 4,
+        "oob_score": false,
+        "random_state": 42,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "不设上限": {
+        "bootstrap": true,
+        "ccp_alpha": 0.0,
+        "class_weight": null,
+        "criterion": "gini",
+        "max_depth": null,
+        "max_features": "sqrt",
+        "max_leaf_nodes": null,
+        "max_samples": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "n_estimators": 100,
+        "n_jobs": 4,
+        "oob_score": false,
+        "random_state": 42,
+        "verbose": 0,
+        "warm_start": false
+      }
+    },
+    "source_sha256": {
+      "data/processed/model_inputs.npz": "9427db4e6191958ef92a3c0e93a24a28ee85b7ab265fefbe0359f0eb4745e029",
+      "results/03_features_and_models/metadata/experiment_settings.json": "4b5dc3f0de0949902a8af0b94f18096e44ea336ab30b18a8bba008e5c1a63634",
+      "results/03_features_and_models/arrays/test_predictions.npz": "1c1d1faf9fcbfb680f47718d88fedca7294c6cbb382728b11fca6cf8b6dc75a4",
+      "results/03_features_and_models/tables/fs_selected_features.csv": "3d113c7ca3010c271a4dd7b145405ba20f1f2522b69c43c6e550dc62e4d85502",
+      "results/03_features_and_models/tables/pca_loadings.csv": "971c788fac637c72cf82020860c5a790e23c46626253eccab6949ac5d55ff79c",
+      "results/03_features_and_models/tables/pca_variance.csv": "7f96dcaf585c612457416b34a6a36a556cb03f8bfe1c81c1e3ce0277110aa499"
+    },
+    "test_rows": 89508,
+    "train_rows": 360464,
+    "threads": {
+      "RF_n_jobs": 4,
+      "BLAS_OpenMP_limit": 4
+    },
+    "timing_repeats": 1,
+    "versions": {
+      "python": "3.11.16",
+      "numpy": "2.4.6",
+      "sklearn": "1.9.1"
+    },
+    "code_sha256": {
+      "src/rf_depth_validation.py": "39f7f404f27af705f98501862ab567a18cf073a1dfa82c38589b49d202df12f1",
+      "src/experiment_validation.py": "f1ea47c842a4b210b0d14858f79629b691d625e1afcc45d4bb689a8eebaf3a53"
+    },
+    "files": {
+      "tables/attack_types.csv": "84e5e30d7bebf5cc43b587facc62c08e609194e05e16710bae51ea21e59a7c3f",
+      "tables/parameters.csv": "1481d79e6dd56fc99f6db5454fe46f22095a25a76ff082d4ea4db83c76d333f7",
+      "arrays/test_predictions.npz": "7acc8e0297a8944ca0d27191e26d8bfec1d327821123bd15e8ae7e48460fb89b",
+      "tables/pairs.csv": "f403cd6b43ab16f90dac8e6a74c90c55e7ecb7b6111256e2f107613b63b1f69c",
+      "tables/diagnostics.csv": "edaf2f7c778846af60b0e18ba70d5ba679af465ccbd92a175fe51801a48dd421",
+      "tables/results.csv": "29e7d31a4387fd4fb89f049238c6604c5bbea14e71ba4d7c9c3503a9f6de7902",
+      "tables/depth_changes.csv": "5b39c55bfd1d6cb409857c079fcf47cde0d972328d83b0bddcd3f2560fa3a935",
+      "tables/reproduction.csv": "2ae967af86d60bec2bee756823218245f9853d6495912aaa450030fff71dceaa"
+    },
+    "layout_update": {
+      "date": "2026-10-08",
+      "results_recomputed": false,
+      "code_sha256": {
+        "src/experiment_validation.py": "bdb9522cc414d1554b1eb0821ee9e6118ae760c93bde806c351a3986f486385f",
+        "src/rf_depth_validation.py": "3c53bb6c3a711ea1867117b083f456cd41f81290d49133652c29f599da22dd41"
+      },
+      "hash_scope": "Original execution code hashes are retained; layout code hashes describe path changes only."
+    }
+  }
+}
